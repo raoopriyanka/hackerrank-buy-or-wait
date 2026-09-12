@@ -27,6 +27,7 @@ def sample_profile():
     return FinancialProfile(
         user_id="user_1",
         home_currency="USD",
+        current_available_balance=5000.0,
         minimum_balance_to_keep=500.0,
         payment_methods_user_will_consider="full_payment,partial_payment,installments,wait",
     )
@@ -76,12 +77,15 @@ def test_generate_full_payment_and_wait_candidates(sample_request, sample_profil
 def test_installment_candidate_from_options(sample_request, sample_profile, sample_state):
     generator = CandidatePlanGenerator()
     opt = RequestPaymentOption(
-        request_id="req_100",
         payment_option_id="opt_1",
-        method="installments",
+        request_id="req_100",
+        payment_method="installments",
+        payment_amount=343.33,
         number_of_payments=3,
-        installment_fee=30.0,
-        plan_details="3 monthly payments",
+        first_payment_date="2026-07-01",
+        payment_frequency_days=30,
+        financing_fee=30.0,
+        total_payable_amount=1030.0,
     )
 
     plans = generator.generate_candidate_plans(
@@ -95,4 +99,4 @@ def test_installment_candidate_from_options(sample_request, sample_profile, samp
     inst_plans = [p for p in plans if p.method == "installments"]
     assert len(inst_plans) > 0
     assert inst_plans[0].payment_option_id == "opt_1"
-    assert inst_plans[0].total_amount_paid == Decimal("1030.00")
+    assert inst_plans[0].total_amount_paid == Decimal("1030.0")

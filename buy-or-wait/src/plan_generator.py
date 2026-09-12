@@ -41,7 +41,7 @@ class CandidatePlanGenerator:
         if "installments" in user_methods:
             for opt in options:
                 if opt.request_id == request.request_id:
-                    plan = self._build_installment_candidate(opt, req_date, home_requested_amount)
+                    plan = self._build_installment_candidate(opt, req_date)
                     if plan:
                         candidates.append(plan)
 
@@ -89,26 +89,31 @@ class CandidatePlanGenerator:
     def _build_installment_candidate(
         self,
         option: RequestPaymentOption,
-        req_date: date,
-        requested_amount: Decimal,
+        fallback_req_date: date,
     ) -> Optional[CandidatePlan]:
         num_payments = option.number_of_payments
-        fee = Decimal(str(option.installment_fee))
-        total_amount = requested_amount + fee
-        installment_amt = total_amount / Decimal(num_payments)
+        total_amount = Decimal(str(option.total_payable_amount))
+        payment_amt = Decimal(str(option.payment_amount))
+
+        try:
+            start_date = parse_iso_date(option.first_payment_date)
+        except Exception:
+            start_date = fallback_req_date
+
+        freq_days = option.payment_frequency_days if option.payment_frequency_days > 0 else 30
 
         schedule = []
         for i in range(num_payments):
-            p_date = req_date + timedelta(days=30 * i)
-            schedule.append(PaymentScheduleItem(payment_date=p_date, amount=installment_amt))
+            p_date = start_date + timedelta(days=freq_days * i)
+            schedule.append(PaymentScheduleItem(payment_date=p_date, amount=payment_amt))
 
         return CandidatePlan(
             method="installments",
             payment_option_id=option.payment_option_id,
             schedule=schedule,
             total_amount_paid=total_amount,
-            amount_safe_to_pay=installment_amt,
-            earliest_date_for_full_payment=schedule[-1].payment_date,
+            amount_safe_to_pay=payment_amt,
+            earliest_date_for_full_payment=schedule[-1].payment_date if schedule else start_date,
             spending_changes_needed=[],
         )
 

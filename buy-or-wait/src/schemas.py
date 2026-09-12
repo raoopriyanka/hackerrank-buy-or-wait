@@ -7,6 +7,7 @@ from decimal import Decimal
 class FinancialProfile:
     user_id: str
     home_currency: str
+    current_available_balance: float
     minimum_balance_to_keep: float
     payment_methods_user_will_consider: str
 
@@ -25,12 +26,15 @@ class RequestRecord:
 
 @dataclass(frozen=True)
 class RequestPaymentOption:
-    request_id: str
     payment_option_id: str
-    method: str
+    request_id: str
+    payment_method: str
+    payment_amount: float
     number_of_payments: int
-    installment_fee: float
-    plan_details: str
+    first_payment_date: str
+    payment_frequency_days: int
+    financing_fee: float
+    total_payable_amount: float
 
 
 @dataclass(frozen=True)
@@ -72,4 +76,4 @@ class ExchangeRate:
     rate_date: str
     from_currency: str
     to_currency: str
-    exchange_rate: Decimal  # Preserved as Decimal from ingestion onward
+    exchange_rate: Decimal
